@@ -9,6 +9,8 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import com.habitly.app.data.ThemeMode
+import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import com.habitly.app.navigation.HabitlyNavGraph
 import com.habitly.app.ui.theme.HabitlyAppTheme
 
@@ -29,6 +31,11 @@ class MainActivity : ComponentActivity() {
             }
             HabitlyAppTheme(darkTheme = darkTheme) {
                 HabitlyNavGraph(showOnboarding = !hasCompletedOnboarding)
+        super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
+        setContent {
+            HabitlyAppTheme {
+                HabitlyNavGraph()
             }
         }
     }

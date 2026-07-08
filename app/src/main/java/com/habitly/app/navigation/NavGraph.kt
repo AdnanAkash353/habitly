@@ -9,6 +9,7 @@ import androidx.compose.material.icons.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.BarChart
 import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -39,6 +40,12 @@ import com.habitly.app.ui.home.HomeRoute
 import com.habitly.app.ui.onboarding.OnboardingRoute
 import com.habitly.app.ui.settings.SettingsRoute
 import com.habitly.app.ui.stats.StatsRoute
+import com.habitly.app.ui.screens.AddEditHabitScreen
+import com.habitly.app.ui.screens.HabitDetailScreen
+import com.habitly.app.ui.screens.HomeScreen
+import com.habitly.app.ui.screens.OnboardingScreen
+import com.habitly.app.ui.screens.SettingsScreen
+import com.habitly.app.ui.screens.StatsScreen
 
 sealed class HabitlyRoute(val route: String, val title: String) {
     data object Onboarding : HabitlyRoute("onboarding", "Habitly")
@@ -83,6 +90,13 @@ fun HabitlyNavGraph(
                     onNavigateEdit = { currentHabitId?.let { navController.navigate(HabitlyRoute.EditHabit.createRoute(it)) } },
                 )
             }
+            HabitlyTopBar(
+                currentRoute = currentRoute,
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateAdd = { navController.navigate(HabitlyRoute.AddHabit.route) },
+                onNavigateEdit = { navController.navigate(HabitlyRoute.EditHabit.createRoute(1)) },
+                onNavigateDetail = { navController.navigate(HabitlyRoute.HabitDetail.createRoute(1)) },
+            )
         },
         bottomBar = {
             if (showBottomBar) {
@@ -109,6 +123,11 @@ fun HabitlyNavGraph(
         ) {
             composable(HabitlyRoute.Onboarding.route) {
                 OnboardingRoute(onFinished = {
+            startDestination = HabitlyRoute.Home.route,
+            modifier = Modifier.padding(innerPadding),
+        ) {
+            composable(HabitlyRoute.Onboarding.route) {
+                OnboardingScreen(onGetStarted = {
                     navController.navigate(HabitlyRoute.Home.route) {
                         popUpTo(HabitlyRoute.Onboarding.route) { inclusive = true }
                     }
@@ -116,6 +135,7 @@ fun HabitlyNavGraph(
             }
             composable(HabitlyRoute.Home.route) {
                 HomeRoute(
+                HomeScreen(
                     onAddHabit = { navController.navigate(HabitlyRoute.AddHabit.route) },
                     onOpenHabit = { habitId -> navController.navigate(HabitlyRoute.HabitDetail.createRoute(habitId)) },
                 )
@@ -128,6 +148,13 @@ fun HabitlyNavGraph(
             }
             composable(HabitlyRoute.AddHabit.route) {
                 AddEditHabitRoute(habitId = null, onDone = { navController.popBackStack() })
+                StatsScreen()
+            }
+            composable(HabitlyRoute.Settings.route) {
+                SettingsScreen()
+            }
+            composable(HabitlyRoute.AddHabit.route) {
+                AddEditHabitScreen(isEdit = false)
             }
             composable(
                 route = HabitlyRoute.EditHabit.route,
@@ -137,6 +164,8 @@ fun HabitlyNavGraph(
                     habitId = backStackEntry.arguments?.getInt("habitId"),
                     onDone = { navController.popBackStack() },
                 )
+            ) {
+                AddEditHabitScreen(isEdit = true)
             }
             composable(
                 route = HabitlyRoute.HabitDetail.route,
@@ -149,6 +178,8 @@ fun HabitlyNavGraph(
                         onDeleted = { navController.popBackStack() },
                     )
                 }
+            ) {
+                HabitDetailScreen(onEdit = { navController.navigate(HabitlyRoute.EditHabit.createRoute(1)) })
             }
         }
     }
@@ -161,6 +192,7 @@ private fun HabitlyTopBar(
     onNavigateBack: () -> Unit,
     onNavigateAdd: () -> Unit,
     onNavigateEdit: () -> Unit,
+    onNavigateDetail: () -> Unit,
 ) {
     val title = when (currentRoute) {
         HabitlyRoute.Onboarding.route -> HabitlyRoute.Onboarding.title
@@ -193,6 +225,9 @@ private fun HabitlyTopBar(
                 }
             }
             if (currentRoute == HabitlyRoute.Home.route) {
+                IconButton(onClick = onNavigateDetail) {
+                    Icon(Icons.Outlined.Info, contentDescription = "Open habit detail")
+                }
                 IconButton(onClick = onNavigateAdd) {
                     Icon(Icons.Outlined.Add, contentDescription = "Add Habit")
                 }
