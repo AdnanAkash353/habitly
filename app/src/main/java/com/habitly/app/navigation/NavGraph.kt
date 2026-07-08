@@ -34,6 +34,12 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.habitly.app.ui.theme.HabitlyTheme
+import com.habitly.app.ui.addedit.AddEditHabitRoute
+import com.habitly.app.ui.detail.DetailRoute
+import com.habitly.app.ui.home.HomeRoute
+import com.habitly.app.ui.onboarding.OnboardingRoute
+import com.habitly.app.ui.settings.SettingsRoute
+import com.habitly.app.ui.stats.StatsRoute
 import com.habitly.app.ui.screens.AddEditHabitScreen
 import com.habitly.app.ui.screens.HabitDetailScreen
 import com.habitly.app.ui.screens.HomeScreen
@@ -64,16 +70,26 @@ private val bottomDestinations = listOf(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HabitlyNavGraph(
+    showOnboarding: Boolean,
     navController: NavHostController = rememberNavController(),
 ) {
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = backStackEntry?.destination
     val currentRoute = currentDestination?.route ?: HabitlyRoute.Home.route
+    val currentHabitId = backStackEntry?.arguments?.getInt("habitId")
     val showBottomBar = currentRoute in bottomDestinations.map { it.route }
 
     Scaffold(
         contentWindowInsets = WindowInsets.safeDrawing,
         topBar = {
+            if (currentRoute != HabitlyRoute.Onboarding.route) {
+                HabitlyTopBar(
+                    currentRoute = currentRoute,
+                    onNavigateBack = { navController.popBackStack() },
+                    onNavigateAdd = { navController.navigate(HabitlyRoute.AddHabit.route) },
+                    onNavigateEdit = { currentHabitId?.let { navController.navigate(HabitlyRoute.EditHabit.createRoute(it)) } },
+                )
+            }
             HabitlyTopBar(
                 currentRoute = currentRoute,
                 onNavigateBack = { navController.popBackStack() },
@@ -102,6 +118,11 @@ fun HabitlyNavGraph(
     ) { innerPadding ->
         NavHost(
             navController = navController,
+            startDestination = if (showOnboarding) HabitlyRoute.Onboarding.route else HabitlyRoute.Home.route,
+            modifier = Modifier.padding(innerPadding),
+        ) {
+            composable(HabitlyRoute.Onboarding.route) {
+                OnboardingRoute(onFinished = {
             startDestination = HabitlyRoute.Home.route,
             modifier = Modifier.padding(innerPadding),
         ) {
@@ -113,12 +134,20 @@ fun HabitlyNavGraph(
                 })
             }
             composable(HabitlyRoute.Home.route) {
+                HomeRoute(
                 HomeScreen(
                     onAddHabit = { navController.navigate(HabitlyRoute.AddHabit.route) },
                     onOpenHabit = { habitId -> navController.navigate(HabitlyRoute.HabitDetail.createRoute(habitId)) },
                 )
             }
             composable(HabitlyRoute.Stats.route) {
+                StatsRoute()
+            }
+            composable(HabitlyRoute.Settings.route) {
+                SettingsRoute()
+            }
+            composable(HabitlyRoute.AddHabit.route) {
+                AddEditHabitRoute(habitId = null, onDone = { navController.popBackStack() })
                 StatsScreen()
             }
             composable(HabitlyRoute.Settings.route) {
@@ -130,12 +159,25 @@ fun HabitlyNavGraph(
             composable(
                 route = HabitlyRoute.EditHabit.route,
                 arguments = listOf(navArgument("habitId") { type = NavType.IntType }),
+            ) { backStackEntry ->
+                AddEditHabitRoute(
+                    habitId = backStackEntry.arguments?.getInt("habitId"),
+                    onDone = { navController.popBackStack() },
+                )
             ) {
                 AddEditHabitScreen(isEdit = true)
             }
             composable(
                 route = HabitlyRoute.HabitDetail.route,
                 arguments = listOf(navArgument("habitId") { type = NavType.IntType }),
+            ) { backStackEntry ->
+                backStackEntry.arguments?.getInt("habitId")?.let { habitId ->
+                    DetailRoute(
+                        habitId = habitId,
+                        onEdit = { id -> navController.navigate(HabitlyRoute.EditHabit.createRoute(id)) },
+                        onDeleted = { navController.popBackStack() },
+                    )
+                }
             ) {
                 HabitDetailScreen(onEdit = { navController.navigate(HabitlyRoute.EditHabit.createRoute(1)) })
             }
